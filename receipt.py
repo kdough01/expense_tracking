@@ -15,41 +15,14 @@ Price: the price of the item on the receipt
 Quantity: if there are duplicates of the item on the receipt we will just increment this value
 """
 
-from PIL import Image, ImageFilter, ImageEnhance
+from PIL import Image#, ImageFilter, ImageEnhance
 import pytesseract
-import numpy as np
-import cv2
-
-
+# import numpy as np
+# import cv2
 from transformers import pipeline
+import re
 
-# Example receipt
-store_string = """OTARGET
-
-GreenWood City - 888 -888-8888
-GreenWood City, CA, 34343-343343
-08/19/2021 17:32:29 EXPIRES 11/17/2021
-
-ELECTRONICS
-
-7053275 BIG 42 Inch LED TVN 533.89
-DISCOUNT COUPON N -50.00
-5599903 Bluetooth F 29.99
-
-HEALTH AND BEAUTY
-1542666 Dave Shanpoo N 12.98
-5044148 Dave Conditioner N 8.99
-SUBTOTAL 535.85
-T = CA TAX 9.7500% on 535.85 49.89
-TOTAL 585.74
-*9999 VISA CHARGE 585.74
-
-REC#2-6965-3530-9288-3901-2 VCD#352-663-321
-
-Thank You
-Please Come Again"""
-
-# First we will need to do a lot of preprocessing an image that may pass through
+# First we will need to do a lot of preprocessing an image that may pass through (see preprocessing.py)
 
 def get_receipt_text(receipt_img):
     """
@@ -83,20 +56,41 @@ def get_store(text, store_list_personal, store_list_general = file_to_list("bran
     """
     # This currently ALWAYS returns a value from the personalized list
     text = text.split(" ")
-    for item in text:
+    """for item in text:
         category = classifier(item, candidate_labels = store_list_personal)
         if category:
-            return category["labels"][0]
+            return category["labels"][0]"""
         
     for item in text:
         category = classifier(item, candidate_labels = store_list_general)
         if category:
             return category["labels"][0]
 
-# I think it would be ideal if a user could upload a list of places they frequently shop at and
-# then we first look through this list before searching the larger stores list
-# Did confirm this is SIGNIFICANTLY faster
+    # I think it would be ideal if a user could upload a list of places they frequently shop at and
+    # then we first look through this list before searching the larger stores list
+    # Did confirm this is SIGNIFICANTLY faster
 
-# file = file_to_list("brands.txt")
-file = ["Whole Foods", "Trader Jo's"]
-print(get_store(text=store_string, store_list_personal=file))
+def get_items(text):
+    """
+    Takes in text from the receipt and returns the items and prices as a dictionary
+    """
+    text = text.split("\n")
+    # print(text)
+    items = {}
+    for line in text:
+        if bool(re.search(r"\d+\.\d{2}$", string=line)):
+            items["".join(filter(str.isalpha, line.rsplit(" ", 1)[0]))] = float(line.rsplit(" ", 1)[1])
+    return items
+
+def get_total(text):
+    """
+    Takes in the text from the receipt and returns the total and subtotal as a dictionary
+    """
+    text = text.split("\n")
+    totals = {}
+    for line in text:
+        if "subtotal" in line.lower():
+            totals["SubTotal"] = line.split(" ")[-1]
+        if "total" in line.lower():
+            totals["Total"] = line.split(" ")[-1]
+    return totals
