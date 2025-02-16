@@ -15,3 +15,7 @@ I’d like to create a simple site that tracks a user's expenses by uploading th
   -  A user should be able to see their spending at a given store, for a given category, and for a given product over the past month
 - Week 9:
   -  Have a chart for spending on a daily/monthly basis for each category
+
+
+Sources:
+- For Flask: https://www.youtube.com/watch?v=Z1RJmh_OqeA
