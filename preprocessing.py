@@ -17,3 +17,11 @@ import cv2
 # https://pyimagesearch.com/2021/11/22/improving-ocr-results-with-basic-image-processing/
 
 # https://pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
+
+def file_to_list(filename):
+        file_list = []
+        with open(filename, "r") as file:
+            for line in file:
+                file_list.append(line)
+
+        return file_list
