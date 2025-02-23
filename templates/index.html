@@ -1,13 +1,49 @@
 {% extends 'base.html' %}
 
 {% block head %}
-
+<title>Expense Tracker</title>
 {% endblock %}
 
 <html>
+
     {% block body %}
-    <body>
-        Hello everyone
-    </body>
+
+    <div class="expense_header">
+        <h1>Expense Tracker</h1>
+    </div>
+
+    <div class="content">
+
+        {% if tasks|length < 1 %}
+
+        <h4>There are no tasks. Create one below to see the table.</h4>
+
+        {% else %}
+        <table>
+            <tr>
+                <th>Task</th>
+                <th>Added</th>
+                <th>Actions</th>
+            </tr>
+            {% for task in tasks %}
+            <tr>
+                <td>{{ task.content }}</td>
+                <td>{{ task.date_created.date() }}</td>
+                <td>
+                    <a href="/delete/{{task.id}}">Delete</a>
+                    <br>
+                    <a href="/update/{{task.id}}">Update</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+
+        <form class="item-form" action="/" method="POST">
+            <input type="text" name="content" id="content">
+            <input type="submit" value="Add Task">
+        </form>
+
+    </div>
     {% endblock %}
 </html>
