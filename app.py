@@ -4,15 +4,18 @@ from datetime import datetime
 from receipt import Receipt
 import os
 
-# TODO: When we delete a receipt, it should also delete the items associated with it in the items db
-# TODO: The app is just displaying all items from any store when we click on it
-
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 image_uploads = 'static/image_uploads'
 app.config["UPLOAD_PATH"] = image_uploads
 
 db = SQLAlchemy(app)
+
+# TODO: Create a pie-chart of spending by category to display on each receipt page
+# TODO: Allow users to change the category of an item, as well as the name of an item
+# TODO: Stop having it load the transformers all the time, it loads them three times every time it reloads/refreshes and slows down everything on my computer
+# TODO: Create a monthly spending chart that displays how much a person has spent that month
+# TODO: Create a login page so we can have more than one user...this might be a bit harder than we thought because of the table relationships
 
 class ReceiptTable(db.Model):
     __tablename__ = 'receipt_table'
@@ -90,7 +93,6 @@ def update(id):
     else:
         return render_template('update.html', task=task)
     
-#TODO: Change this function so it matches with the table created above. Don't forget to run the command line commands to instantiate the new database
 @app.route('/items/<int:receipt_id>')
 def items(receipt_id):
     receipt = ReceiptTable.query.get_or_404(receipt_id)
