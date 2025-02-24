@@ -87,7 +87,7 @@ class Receipt():
                 totals["Total"] = line.split(" ")[-1]
         return totals
     
-    def get_item_categories(items, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
+    def get_item_categories(items, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
         """
         Function to categorize items on a receipt.
 
@@ -105,7 +105,7 @@ class Receipt():
 
         return categorized_items_dict
     
-    def get_item_category(item, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
+    def get_item_category(item, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
         category = classifier(item, candidate_labels = categories)
         return category["labels"][0]
 
