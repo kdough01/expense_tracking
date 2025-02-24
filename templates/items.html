@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Expense Tracker</title>
+{% endblock %}
+
+<html>
+
+    {% block body %}
+
+    <div class="expense_header">
+        <h1>Expense Tracker Itemized Receipt</h1>
+    </div>
+
+    <div class="content">
+
+        <table>
+            <tr>
+                <th>Item</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Actions</th>
+            </tr>
+            {% for item in receipt.receipt_items %}
+            <tr>
+                <td>{{ item.item }}</td>
+                <td>{{ item.total }}</td>
+                <td>{{ item.category }}</td>
+                <td>
+                    <a href="/delete/{{item.id}}">Delete</a>
+                    <br>
+                    <a href="/update/{{item.id}}">Update</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+    {% endblock %}
+</html>

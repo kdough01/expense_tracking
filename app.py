@@ -4,8 +4,8 @@ from datetime import datetime
 from receipt import Receipt
 import os
 
-
-# https://www.youtube.com/watch?v=Z1RJmh_OqeA
+# TODO: When we delete a receipt, it should also delete the items associated with it in the items db
+# TODO: The app is just displaying all items from any store when we click on it
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
@@ -15,10 +15,20 @@ app.config["UPLOAD_PATH"] = image_uploads
 db = SQLAlchemy(app)
 
 class ReceiptTable(db.Model):
+    __tablename__ = 'receipt_table'
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable = False)
     total = db.Column(db.String(200), nullable = False)
     date_created = db.Column(db.DateTime, default = datetime.utcnow)
+    receipt_items = db.relationship('ItemTable', backref='receipt_table', cascade="all, delete-orphan")
+
+class ItemTable(db.Model):
+    __tablename__ = 'item_table'
+    id = db.Column(db.Integer, primary_key=True)
+    item = db.Column(db.String(200), nullable = False)
+    total = db.Column(db.String(200), nullable = False)
+    category = db.Column(db.String(200), nullable = False)
+    receipt_id = db.Column(db.Integer, db.ForeignKey('receipt_table.id', ondelete="CASCADE"))
 
 @app.route('/', methods=["POST", "GET"])
 def index():
@@ -26,20 +36,27 @@ def index():
         image = request.files.get('img')
         file_path = os.path.join(app.config["UPLOAD_PATH"], image.filename)
         image.save(file_path)
-
+        text = Receipt.get_receipt_text(file_path)
         
         try:
-            store = Receipt.get_store(file_path)
-            amount = Receipt.get_total(file_path)["Total"]
-
+            store = Receipt.get_store(text)
+            amount = Receipt.get_total(text)["Total"]
+            
         except:
             store = "Could not determine"
             amount = "Could not determine"
         finally:
-            new_task = ReceiptTable(content = store, total = amount)
+            new_receipt = ReceiptTable(content = store, total = amount)
+            db.session.add(new_receipt)
+            db.session.commit()
+            items_dict = Receipt.get_items(text)
+            for item in items_dict:
+                category = Receipt.get_item_category(item)
+                new_item = ItemTable(item = item, total = items_dict[item], category = category, receipt_id = new_receipt.id)
+                db.session.add(new_item)
+                db.session.commit()
             
         try:
-            db.session.add(new_task)
             db.session.commit()
             return redirect('/')
         except:
@@ -72,6 +89,12 @@ def update(id):
             return "There was an issue updating your task."
     else:
         return render_template('update.html', task=task)
+    
+#TODO: Change this function so it matches with the table created above. Don't forget to run the command line commands to instantiate the new database
+@app.route('/items/<int:receipt_id>')
+def items(receipt_id):
+    receipt = ReceiptTable.query.get_or_404(receipt_id)
+    return render_template('items.html', receipt = receipt)
 
 if __name__ == "__main__":
     app.run(debug=True)

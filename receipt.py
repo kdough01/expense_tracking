@@ -1,7 +1,4 @@
 """
-Use pytessaract to read receipt and parse information.
-https://pypi.org/project/pytesseract/
-
 For now, we are going to assume the receipt is able to be easily read and we don't have to do any preprocessing.
 
 The goal will be to get each receipt in the form of a dataframe with columns:
@@ -90,5 +87,32 @@ class Receipt():
                 totals["Total"] = line.split(" ")[-1]
         return totals
     
+    def get_item_categories(items, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
+        """
+        Function to categorize items on a receipt.
+
+        Parameters:
+        items: dict - items from the receipt
+        categories: list - pre-specified categories, can be changed
+        classifier: pipeline - model that we will use to classify the items, defaulted to BART
+        """
+
+        categorized_items_dict = {}
+        items = items.keys()
+        for item in items:
+            category = classifier(item, candidate_labels = categories)
+            categorized_items_dict[item] = category["labels"][0]
+
+        return categorized_items_dict
+    
+    def get_item_category(item, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
+        category = classifier(item, candidate_labels = categories)
+        return category["labels"][0]
+
     def __repr__(self):
         return '<Receipt %r>' % self.id
+    
+# text = Receipt.get_receipt_text("/Users/kevindougherty/Documents/GitHub/expense_tracking/test.png")
+# items = Receipt.get_items(text)
+# print(items.keys())
+# print(Receipt.get_item_categories(items=items))

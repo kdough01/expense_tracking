@@ -34,7 +34,9 @@
             </tr>
             {% for task in tasks %}
             <tr>
-                <td>{{ task.content }}</td>
+                <td>
+                    <a href="/items/{{task.id}}">{{ task.content }}</a>
+                </td>
                 <td>{{ task.date_created.date() }}</td>
                 <td>{{ task.total }}</td>
                 <td>
