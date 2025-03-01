@@ -16,10 +16,12 @@
 
     <div class="expense_header">
         <h1>Expense Tracker</h1>
-        <a href="/">Expense Tracker Home</a>
+        <a href="{{url_for('logout')}}">Logout</a>
+        <p></p>
+        <a href="/home">Expense Tracker Home</a>
     </div>
 
-    <form class="item-form" action="/" method="POST" enctype="multipart/form-data">
+    <form class="item-form" action="/home" method="POST" enctype="multipart/form-data">
         <label for="img">Select image with your receipt:</label>
         <input type="file" name="img" id="img" accept="image/*">
         <input type="submit" value="Add Receipt">

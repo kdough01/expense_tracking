@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Expense Tracker</title>
+
+<div class="expense_header">
+    <h1>Expense Tracker</h1>
+    <a href="/register">Expense Tracker Register</a>
+</div>
+{% endblock %}
+
+{% block body %}
+
+<div>
+    <form method="POST" action="" class="login">
+        {{ form.hidden_tag() }}
+        {{ form.username }}
+        <p></p>
+        {{ form.password }}
+        {{ form.submit }}
+    </form>
+</div>
+{% endblock %}
