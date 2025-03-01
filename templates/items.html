@@ -10,6 +10,22 @@
 
     <div class="expense_header">
         <h1>Expense Tracker Itemized Receipt</h1>
+        <a href="/">Expense Tracker Home</a>
+    </div>
+
+    <div>
+        <form class="item-form" action="/add-item/{{receipt.id}}" method="POST">
+            <input type="text" name="content" id="content">
+            <input type="submit" value="Add Item Name">
+            <p></p>
+            <p></p>
+            <input type="text" name="total" id="total">
+            <input type="submit" value="Add Item Total">
+            <p></p>
+            <p></p>
+            <input type="text" name="category" id="category">
+            <input type="submit" value="Add Item Category">
+        </form>
     </div>
 
     <div class="content">
@@ -27,14 +43,23 @@
                 <td>{{ item.total }}</td>
                 <td>{{ item.category }}</td>
                 <td>
-                    <a href="/delete/{{item.id}}">Delete</a>
+                    <a href="/delete-item/{{item.id}}">Delete</a>
                     <br>
-                    <a href="/update/{{item.id}}">Update</a>
+                    <a href="/update-item/{{item.id}}">Update</a>
                 </td>
             </tr>
             {% endfor %}
         </table>
 
     </div>
+
+    <div class="expense_header">
+        <h1>{{header}}</h1>
+    </div>
+
+    <div id="plotly-div"></div>
+
+    {{ plot_html | safe }}
+
     {% endblock %}
 </html>

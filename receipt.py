@@ -32,7 +32,7 @@ class Receipt():
         text = pytesseract.image_to_string(img)
         return text
 
-    def get_store(text, store_list_personal = ["Target", "CVS"], store_list_general = file_to_list("brands.txt"), classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
+    def get_store(text, store_list_personal = ["Target", "CVS", "Trader Joe's"], store_list_general = file_to_list("brands.txt")):
         """
         We have two sets of stores. One set is extremely general that contains thousands of stores.
         The other set is personalized to each user of the platform. It is a small set of stores that user has shopped at
@@ -47,6 +47,7 @@ class Receipt():
         store_list: list - list of stores that a person may shop at, stored in our stores.txt file
         """
         # This currently ALWAYS returns a value from the personalized list
+        classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
         text = text.split(" ")
         """for item in text:
             category = classifier(item, candidate_labels = store_list_personal)
@@ -70,8 +71,9 @@ class Receipt():
         # print(text)
         items = {}
         for line in text:
-            if bool(re.search(r"\d+\.\d{2}$", string=line)):
-                items["".join(filter(str.isalpha, line.rsplit(" ", 1)[0]))] = float(line.rsplit(" ", 1)[1])
+            amount = re.search(r"\d+\.\d{2}$", string=line)
+            if amount:
+                items["".join(filter(str.isalpha, line.rsplit(" ", 1)[0]))] = amount.group()
         return items
 
     def get_total(text):
@@ -82,12 +84,14 @@ class Receipt():
         totals = {}
         for line in text:
             if "subtotal" in line.lower():
-                totals["SubTotal"] = line.split(" ")[-1]
+                amount = re.search(r"\d+\.\d{2}$", string=line)
+                totals["SubTotal"] = amount.group()
             if "total" in line.lower():
-                totals["Total"] = line.split(" ")[-1]
+                amount = re.search(r"\d+\.\d{2}$", string=line)
+                totals["Total"] = amount.group()
         return totals
     
-    def get_item_categories(items, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
+    def get_item_categories(items, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"]):
         """
         Function to categorize items on a receipt.
 
@@ -96,7 +100,7 @@ class Receipt():
         categories: list - pre-specified categories, can be changed
         classifier: pipeline - model that we will use to classify the items, defaulted to BART
         """
-
+        classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
         categorized_items_dict = {}
         items = items.keys()
         for item in items:
@@ -116,3 +120,9 @@ class Receipt():
 # items = Receipt.get_items(text)
 # print(items.keys())
 # print(Receipt.get_item_categories(items=items))
+
+if __name__ == "__main__":
+    R = Receipt
+    text = R.get_receipt_text("/Users/kevindougherty/Documents/GitHub/expense_tracking/64253187_429175fba8_b.jpg")
+    print(text)
+    print(R.get_store(text))

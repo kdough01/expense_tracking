@@ -1,15 +1,22 @@
+<!doctype html>
+
+<html>
 {% extends 'base.html' %}
 
 {% block head %}
-<title>Expense Tracker</title>
+<head>
+    <title>Expense Tracker</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+</head>
 {% endblock %}
 
-<html>
-
+<body>
     {% block body %}
 
     <div class="expense_header">
         <h1>Expense Tracker</h1>
+        <a href="/">Expense Tracker Home</a>
     </div>
 
     <form class="item-form" action="/" method="POST" enctype="multipart/form-data">
@@ -17,12 +24,13 @@
         <input type="file" name="img" id="img" accept="image/*">
         <input type="submit" value="Add Receipt">
     </form>
-
+    <p></p>
+    <p></p>
     <div class="content">
 
-        {% if tasks|length < 1 %}
+        {% if receipts|length < 1 %}
 
-        <h4>There are no tasks. Create one below to see the table.</h4>
+        <h4>There are no receipts. Add one below to see the table.</h4>
 
         {% else %}
         <table>
@@ -32,17 +40,17 @@
                 <th>Total</th>
                 <th>Actions</th>
             </tr>
-            {% for task in tasks %}
+            {% for receipt in receipts %}
             <tr>
                 <td>
-                    <a href="/items/{{task.id}}">{{ task.content }}</a>
+                    <a href="/items/{{receipt.id}}">{{ receipt.content }}</a>
                 </td>
-                <td>{{ task.date_created.date() }}</td>
-                <td>{{ task.total }}</td>
+                <td>{{ receipt.date_created.date() }}</td>
+                <td>{{ receipt.total }}</td>
                 <td>
-                    <a href="/delete/{{task.id}}">Delete</a>
+                    <a href="/delete/{{receipt.id}}">Delete</a>
                     <br>
-                    <a href="/update/{{task.id}}">Update</a>
+                    <a href="/update-store-name/{{receipt.id}}">Update</a>
                 </td>
             </tr>
             {% endfor %}
@@ -50,5 +58,16 @@
         {% endif %}
 
     </div>
+
+    <div class="expense_header">
+        <h1>{{header}}</h1>
+    </div>
+
+    <div id="plotly-div"></div>
+
+    {{ plot_html | safe }}
+
     {% endblock %}
+
+</body>    
 </html>

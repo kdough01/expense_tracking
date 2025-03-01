@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Expense Tracker</title>
+{% endblock %}
+
+<html>
+
+    {% block body %}
+
+    <div class="expense_header">
+        <h1>Expense Tracker Update Item Information</h1>
+    </div>
+
+    <div class="content">
+
+        <form class="item-form" action="/update-item/{{item.id}}" method="POST">
+            <input type="text" name="content" id="content" value="{{item.item}}">
+            <input type="submit" value="Update Item Name">
+            <p></p>
+            <p></p>
+            <input type="text" name="total" id="total" value="{{item.total}}">
+            <input type="submit" value="Update Item Total">
+            <p></p>
+            <p></p>
+            <input type="text" name="category" id="category" value="{{item.category}}">
+            <input type="submit" value="Update Item Category">
+        </form>
+
+    </div>
+    {% endblock %}
+</html>

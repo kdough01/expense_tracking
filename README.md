@@ -22,3 +22,4 @@ Sources:
 - Linking databases in Flask: https://www.digitalocean.com/community/tutorials/how-to-use-many-to-many-database-relationships-with-flask-sqlalchemy
 - Word classification (using the transformers and pipeline): https://huggingface.co/docs/transformers/main/en/task_summary#zero-shot-text-classification
 - Pytesseract to read receipt and parse information: https://pypi.org/project/pytesseract/
+- Forms in Flask: https://www.digitalocean.com/community/tutorials/how-to-use-web-forms-in-a-flask-application
