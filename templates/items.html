@@ -10,11 +10,11 @@
 
     <div class="expense_header">
         <h1>Expense Tracker Itemized Receipt</h1>
-        <a href="/home">Expense Tracker Home</a>
+        <a href="{{ url_for('index', user_id=user_id) }}">Expense Tracker Home</a>
     </div>
 
     <div>
-        <form class="item-form" action="/add-item/{{receipt.id}}" method="POST">
+        <form class="item-form" action="{{ url_for('add_item', user_id=user_id, receipt_id=receipt_id) }}" method="POST">
             <input type="text" name="content" id="content">
             <input type="submit" value="Add Item Name">
             <p></p>
@@ -43,9 +43,9 @@
                 <td>{{ item.total }}</td>
                 <td>{{ item.category }}</td>
                 <td>
-                    <a href="/delete-item/{{item.id}}">Delete</a>
+                    <a href="{{ url_for('delete_item', user_id=user_id, item_id=item.id, receipt_id=item.receipt_id) }}">Delete</a>
                     <br>
-                    <a href="/update-item/{{item.id}}">Update</a>
+                    <a href="{{ url_for('update_item', user_id=user_id, item_id=item.id, receipt_id=receipt_id) }}">Update</a>
                 </td>
             </tr>
             {% endfor %}

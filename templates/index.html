@@ -18,10 +18,10 @@
         <h1>Expense Tracker</h1>
         <a href="{{url_for('logout')}}">Logout</a>
         <p></p>
-        <a href="/home">Expense Tracker Home</a>
+        <a href="{{ url_for('index', user_id=user_id) }}">Expense Tracker Home</a>
     </div>
 
-    <form class="item-form" action="/home" method="POST" enctype="multipart/form-data">
+    <form class="item-form" action="{{ url_for('index', user_id=user_id) }}" method="POST" enctype="multipart/form-data">
         <label for="img">Select image with your receipt:</label>
         <input type="file" name="img" id="img" accept="image/*">
         <input type="submit" value="Add Receipt">
@@ -45,14 +45,14 @@
             {% for receipt in receipts %}
             <tr>
                 <td>
-                    <a href="/items/{{receipt.id}}">{{ receipt.content }}</a>
+                    <a href="/items/{{user_id}}/{{receipt.id}}">{{ receipt.content }}</a>
                 </td>
                 <td>{{ receipt.date_created.date() }}</td>
                 <td>{{ receipt.total }}</td>
                 <td>
-                    <a href="/delete/{{receipt.id}}">Delete</a>
+                    <a href="{{ url_for('delete', user_id=user_id, receipt_id=receipt.id) }}">Delete</a>
                     <br>
-                    <a href="/update-store-name/{{receipt.id}}">Update</a>
+                    <a href="{{ url_for('update', user_id=user_id, receipt_id=receipt.id) }}">Update</a>
                 </td>
             </tr>
             {% endfor %}

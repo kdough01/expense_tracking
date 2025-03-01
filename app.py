@@ -20,7 +20,7 @@ app.config["UPLOAD_PATH"] = image_uploads
 app.config["SECRET_KEY"] = "secret_key"
 
 # TODO: Create a monthly spending chart that displays how much a person has spent that month
-# TODO: Create a login page so we can have more than one user...this might be a bit harder than we thought because of the table relationships
+# TODO: When a user logs in, it should only show their spending, not all spending in the database
 # TODO: Add a check where if the stores name is in a receipt explicitly we use that as the stores name.
 # TODO: I think I want Total to always be displayed on the itemized receipt at the bottom. I also want the Total to update automatically if an item is added/deleted
 db = SQLAlchemy(app)
@@ -43,6 +43,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable = False, unique = True)
     password = db.Column(db.String(80), nullable = False)
+    user_receipts = db.relationship('ReceiptTable', backref='user', cascade="all, delete-orphan")
 
 class ReceiptTable(db.Model):
     __tablename__ = 'receipt_table'
@@ -51,6 +52,7 @@ class ReceiptTable(db.Model):
     total = db.Column(db.String(200), nullable = False)
     date_created = db.Column(db.DateTime, default = datetime.utcnow)
     receipt_items = db.relationship('ItemTable', backref='receipt_table', cascade="all, delete-orphan")
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete="CASCADE"))
 
 class ItemTable(db.Model):
     __tablename__ = 'item_table'
@@ -84,7 +86,7 @@ def login():
         if user:
             if bcrypt.check_password_hash(user.password, form.password.data):
                 login_user(user)
-                return redirect(url_for('index'))
+                return redirect(url_for('index', user_id = user.id))
     return render_template('login.html', form=form)
 
 @app.route('/register', methods=["POST", "GET"])
@@ -105,9 +107,9 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/home', methods=["POST", "GET"])
+@app.route('/home/<int:user_id>', methods=["POST", "GET"])
 @login_required
-def index():
+def index(user_id):
     if request.method == "POST":
         image = request.files.get('img')
         file_path = os.path.join(app.config["UPLOAD_PATH"], image.filename)
@@ -122,7 +124,7 @@ def index():
             store = "Could not determine"
             amount = "0"
         finally:
-            new_receipt = ReceiptTable(content = store, total = amount)
+            new_receipt = ReceiptTable(content = store, total = amount, user_id = user_id)
             db.session.add(new_receipt)
             db.session.commit()
             items_dict = Receipt.get_items(text)
@@ -134,11 +136,11 @@ def index():
             
         try:
             db.session.commit()
-            return redirect('/home')
+            return redirect(url_for('index', user_id = user_id))
         except:
-            return "There was an issue adding your task."
+            return "There was an issue adding your receipt."
     else:
-        receipts = ReceiptTable.query.order_by(ReceiptTable.date_created).all()
+        receipts = ReceiptTable.query.filter_by(user_id=user_id).order_by(ReceiptTable.date_created).all()
         
         unique_stores = {}
         for receipt in receipts:
@@ -155,37 +157,37 @@ def index():
 
         header = "Expenses by Store"
 
-        return render_template("index.html", receipts=receipts, header=header, plot_html=plot_html)
+        return render_template("index.html", receipts=receipts, header=header, plot_html=plot_html, user_id = user_id)
 
-@app.route('/delete/<int:id>')
-def delete(id):
-    task_to_delete = ReceiptTable.query.get_or_404(id)
+@app.route('/delete<int:user_id>/<int:receipt_id>')
+def delete(user_id, receipt_id):
+    task_to_delete = ReceiptTable.query.filter_by(id=receipt_id, user_id=user_id).first_or_404()
 
     try:
         db.session.delete(task_to_delete)
         db.session.commit()
-        return redirect('/home')
+        return redirect(url_for('index', user_id=user_id, receipt_id=receipt_id))
     except:
         return "There was a problem deleting that task."
     
-@app.route('/update-store-name/<int:id>', methods=['GET', 'POST'])
-def update(id):
-    task = ReceiptTable.query.get_or_404(id)
+@app.route('/update-store-name/<int:user_id>/<int:receipt_id>', methods=['GET', 'POST'])
+def update(user_id, receipt_id):
+    task = ReceiptTable.query.filter_by(id=receipt_id, user_id=user_id).first_or_404()
 
     if request.method == 'POST':
         task.content = request.form['content']
         task.total = request.form['total']
         try:
             db.session.commit()
-            return redirect('/home')
+            return redirect(url_for('index', user_id=user_id))
         except:
             return "There was an issue updating the store name."
     else:
-        return render_template('update-store-name.html', task=task)
+        return render_template('update-store-name.html', task=task, user_id=user_id, receipt_id=receipt_id)
     
-@app.route('/items/<int:receipt_id>')
-def items(receipt_id):
-    receipt = ReceiptTable.query.get_or_404(receipt_id)
+@app.route('/items/<int:user_id>/<int:receipt_id>')
+def items(user_id, receipt_id):
+    receipt = ReceiptTable.query.filter_by(id=receipt_id, user_id=user_id).first_or_404()
         
     categories = {}
     for item in receipt.receipt_items:
@@ -203,11 +205,12 @@ def items(receipt_id):
 
     header = "Expenses by Category"
 
-    return render_template('items.html', receipt = receipt, plot_html=plot_html, header=header)
+    return render_template('items.html', receipt = receipt, plot_html=plot_html, header=header, user_id=user_id, receipt_id=receipt_id)
 
-@app.route('/update-item/<int:id>', methods=['GET', 'POST'])
-def update_item(id):
-    item = ItemTable.query.get_or_404(id)
+@app.route('/update-item/<int:user_id>/<int:item_id>', methods=['GET', 'POST'])
+def update_item(user_id, item_id):
+    item = ItemTable.query.get_or_404(item_id)
+    receipt_id = item.receipt_id
 
     if request.method == 'POST':
         item.item = request.form['content']
@@ -215,25 +218,26 @@ def update_item(id):
         item.category = request.form['category']
         try:
             db.session.commit()
-            return redirect(url_for('items', receipt_id = item.receipt_id))
+            return redirect(url_for('items', receipt_id = receipt_id, user_id=user_id))
         except:
             return "There was an issue updating the item name or total."
     else:
-        return render_template('update-item.html', item=item)
+        return render_template('update-item.html', item=item, user_id=user_id, receipt_id=receipt_id)
     
-@app.route('/delete-item/<int:id>')
-def delete_item(id):
-    item_to_delete = ItemTable.query.get_or_404(id)
+@app.route('/delete-item/<int:user_id>/<int:item_id>')
+def delete_item(user_id, item_id):
+    item_to_delete = ItemTable.query.get_or_404(item_id)
+    receipt_id = item_to_delete.receipt_id
 
     try:
         db.session.delete(item_to_delete)
         db.session.commit()
-        return redirect(url_for('items', receipt_id = item_to_delete.receipt_id))
+        return redirect(url_for('items', receipt_id = receipt_id, user_id=user_id))
     except:
         return "There was a problem deleting that item."
     
-@app.route('/add-item/<int:receipt_id>', methods=["POST", "GET"])
-def add_item(receipt_id):
+@app.route('/add-item/<int:user_id>/<int:receipt_id>', methods=["POST", "GET"])
+def add_item(user_id, receipt_id):
     if request.method == 'POST':
         if request.form['total'] == "":
             return "Please enter a valid number for item amount."
@@ -242,7 +246,7 @@ def add_item(receipt_id):
             new_item = ItemTable(item = request.form['content'], total = float(request.form['total']), category = request.form['category'], receipt_id = receipt_id)
             db.session.add(new_item)
             db.session.commit()
-            return redirect(url_for('items', receipt_id = new_item.receipt_id))
+            return redirect(url_for('items', receipt_id = receipt_id, user_id=user_id, item_id = new_item.id))
         except:
             return "There was a problem adding that item."
 
