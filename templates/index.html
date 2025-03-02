@@ -56,18 +56,32 @@
                 </td>
             </tr>
             {% endfor %}
+            <tr>
+                <td>Total</td>
+                <td></td>
+                <td>{{ receipt_totals }}</td>
+                <td></td>
+            </tr>
         </table>
         {% endif %}
 
     </div>
 
     <div class="expense_header">
-        <h1>{{header}}</h1>
+        <h1>{{expenses_by_store_header}}</h1>
     </div>
 
     <div id="plotly-div"></div>
 
-    {{ plot_html | safe }}
+    {{ expenses_by_store | safe }}
+
+    <div class="expense_header">
+        <h1>{{expenses_by_category_header}}</h1>
+    </div>
+
+    <div id="plotly-div"></div>
+
+    {{ expenses_by_category | safe }}
 
     {% endblock %}
 

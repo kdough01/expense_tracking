@@ -54,3 +54,11 @@ td {
     padding-top: 1%;
     padding-left: 2%;
 }
+
+tr:hover {
+    background-color: #ebe7ff;
+}
+
+tr:last-child {
+    background:#c0e6ff;
+}

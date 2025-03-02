@@ -20,9 +20,10 @@ app.config["UPLOAD_PATH"] = image_uploads
 app.config["SECRET_KEY"] = "secret_key"
 
 # TODO: Create a monthly spending chart that displays how much a person has spent that month
-# TODO: When a user logs in, it should only show their spending, not all spending in the database
 # TODO: Add a check where if the stores name is in a receipt explicitly we use that as the stores name.
 # TODO: I think I want Total to always be displayed on the itemized receipt at the bottom. I also want the Total to update automatically if an item is added/deleted
+# TODO: I need a way to manually add a receipt in case someone doesn't have a picture of their receipt
+
 db = SQLAlchemy(app)
 """
 When we load the site it should take us to the login page automatically. There should be a button "Don't have a site, sign up!" This would take us to the sign up page.
@@ -141,23 +142,37 @@ def index(user_id):
             return "There was an issue adding your receipt."
     else:
         receipts = ReceiptTable.query.filter_by(user_id=user_id).order_by(ReceiptTable.date_created).all()
-        
+        receipt_totals = 0
         unique_stores = {}
+        unique_categories = {}
         for receipt in receipts:
             if receipt.content in unique_stores:
                 unique_stores[receipt.content] += float(receipt.total)
             else:
                 unique_stores[receipt.content] = float(receipt.total)
+            for item in receipt.receipt_items:
+                if item.category != "Total":
+                    receipt_totals += float(item.total)
+                    if item.category in unique_categories:
+                        unique_categories[item.category] += float(item.total)
+                    else:
+                        unique_categories[item.category] = float(item.total)
 
         unique_stores = pd.DataFrame.from_dict(unique_stores, orient='index', columns=["Total"])
+        unique_categories = pd.DataFrame.from_dict(unique_categories, orient='index', columns=["Total"])
 
         fig = px.bar(unique_stores, x=unique_stores.index, y="Total")
         fig.update_layout(title_text=None)
-        plot_html = pio.to_html(fig, full_html=False)
+        expenses_by_store = pio.to_html(fig, full_html=False)
 
-        header = "Expenses by Store"
+        fig = px.bar(unique_categories, x=unique_categories.index, y="Total")
+        fig.update_layout(title_text=None)
+        expenses_by_category = pio.to_html(fig, full_html=False)
 
-        return render_template("index.html", receipts=receipts, header=header, plot_html=plot_html, user_id = user_id)
+        expenses_by_store_header = "Expenses by Store"
+        expenses_by_category_header = "Expenses by Category"
+
+        return render_template("index.html", receipts=receipts, expenses_by_store_header=expenses_by_store_header, expenses_by_store=expenses_by_store, user_id = user_id, expenses_by_category=expenses_by_category, expenses_by_category_header=expenses_by_category_header, receipt_totals=receipt_totals)
 
 @app.route('/delete<int:user_id>/<int:receipt_id>')
 def delete(user_id, receipt_id):
@@ -190,8 +205,10 @@ def items(user_id, receipt_id):
     receipt = ReceiptTable.query.filter_by(id=receipt_id, user_id=user_id).first_or_404()
         
     categories = {}
+    receipt_total = 0
     for item in receipt.receipt_items:
         if item.category != "Total":
+            receipt_total += float(item.total)
             if item.category in categories:
                 categories[item.category] += float(item.total)
             else:
@@ -205,7 +222,7 @@ def items(user_id, receipt_id):
 
     header = "Expenses by Category"
 
-    return render_template('items.html', receipt = receipt, plot_html=plot_html, header=header, user_id=user_id, receipt_id=receipt_id)
+    return render_template('items.html', receipt = receipt, plot_html=plot_html, header=header, user_id=user_id, receipt_id=receipt_id, receipt_total=receipt_total)
 
 @app.route('/update-item/<int:user_id>/<int:item_id>', methods=['GET', 'POST'])
 def update_item(user_id, item_id):
