@@ -23,10 +23,8 @@ app.config["SECRET_KEY"] = "secret_key"
 
 # TODO: Create a monthly spending chart that displays how much a person has spent that month
 # TODO: Add a check where if the stores name is in a receipt explicitly we use that as the stores name.
-# TODO: I think I want Total to always be displayed on the itemized receipt at the bottom. I also want the Total to update automatically if an item is added/deleted
 # TODO: I need a way to manually add a receipt in case someone doesn't have a picture of their receipt
-# TODO: The totals for each individual receipt should just be the total at the bottom of the receipt
-# TODO: Preprocessing: https://www.youtube.com/watch?v=ADV-AjAXHdc
+# TODO: Make sure the chart labels/axes' labels are all correct
 
 db = SQLAlchemy(app)
 """
