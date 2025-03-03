@@ -48,7 +48,7 @@
                     <a href="/items/{{user_id}}/{{receipt.id}}">{{ receipt.content }}</a>
                 </td>
                 <td>{{ receipt.date_created.date() }}</td>
-                <td>{{ receipt.total }}</td>
+                <td>{{ receipt_totals[loop.index0]|round(2) }}</td>
                 <td>
                     <a href="{{ url_for('delete', user_id=user_id, receipt_id=receipt.id) }}">Delete</a>
                     <br>
@@ -59,7 +59,7 @@
             <tr>
                 <td>Total</td>
                 <td></td>
-                <td>{{ receipt_totals }}</td>
+                <td>{{ receipt_total|round(2) }}</td>
                 <td></td>
             </tr>
         </table>

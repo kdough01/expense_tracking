@@ -11,6 +11,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
+from preprocessing import Preprocessing
+import cv2
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -23,6 +25,8 @@ app.config["SECRET_KEY"] = "secret_key"
 # TODO: Add a check where if the stores name is in a receipt explicitly we use that as the stores name.
 # TODO: I think I want Total to always be displayed on the itemized receipt at the bottom. I also want the Total to update automatically if an item is added/deleted
 # TODO: I need a way to manually add a receipt in case someone doesn't have a picture of their receipt
+# TODO: The totals for each individual receipt should just be the total at the bottom of the receipt
+# TODO: Preprocessing: https://www.youtube.com/watch?v=ADV-AjAXHdc
 
 db = SQLAlchemy(app)
 """
@@ -34,6 +38,8 @@ Tracker.
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+
+preprocessing = Preprocessing()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -115,6 +121,14 @@ def index(user_id):
         image = request.files.get('img')
         file_path = os.path.join(app.config["UPLOAD_PATH"], image.filename)
         image.save(file_path)
+
+        image = cv2.imread(file_path)
+        image = preprocessing.grayscale(image)
+        image = preprocessing.noise_removal(image)
+        image = preprocessing.thick_font(image)
+        image = preprocessing.remove_borders(image)
+        cv2.imwrite(file_path, image)
+
         text = Receipt.get_receipt_text(file_path)
         
         try:
@@ -142,7 +156,7 @@ def index(user_id):
             return "There was an issue adding your receipt."
     else:
         receipts = ReceiptTable.query.filter_by(user_id=user_id).order_by(ReceiptTable.date_created).all()
-        receipt_totals = 0
+        receipt_totals = []
         unique_stores = {}
         unique_categories = {}
         for receipt in receipts:
@@ -150,13 +164,18 @@ def index(user_id):
                 unique_stores[receipt.content] += float(receipt.total)
             else:
                 unique_stores[receipt.content] = float(receipt.total)
+
+            item_sum = 0
             for item in receipt.receipt_items:
                 if item.category != "Total":
-                    receipt_totals += float(item.total)
+                    item_sum += float(item.total)
                     if item.category in unique_categories:
                         unique_categories[item.category] += float(item.total)
                     else:
                         unique_categories[item.category] = float(item.total)
+            receipt_totals.append(item_sum)
+
+        receipt_total = sum(receipt_totals)
 
         unique_stores = pd.DataFrame.from_dict(unique_stores, orient='index', columns=["Total"])
         unique_categories = pd.DataFrame.from_dict(unique_categories, orient='index', columns=["Total"])
@@ -172,7 +191,7 @@ def index(user_id):
         expenses_by_store_header = "Expenses by Store"
         expenses_by_category_header = "Expenses by Category"
 
-        return render_template("index.html", receipts=receipts, expenses_by_store_header=expenses_by_store_header, expenses_by_store=expenses_by_store, user_id = user_id, expenses_by_category=expenses_by_category, expenses_by_category_header=expenses_by_category_header, receipt_totals=receipt_totals)
+        return render_template("index.html", receipts=receipts, expenses_by_store_header=expenses_by_store_header, expenses_by_store=expenses_by_store, user_id = user_id, expenses_by_category=expenses_by_category, expenses_by_category_header=expenses_by_category_header, receipt_totals=receipt_totals, receipt_total=receipt_total)
 
 @app.route('/delete<int:user_id>/<int:receipt_id>')
 def delete(user_id, receipt_id):

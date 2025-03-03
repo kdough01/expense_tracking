@@ -18,9 +18,12 @@ import pytesseract
 # import cv2
 from transformers import pipeline
 import re
-from preprocessing import file_to_list
+from preprocessing import Preprocessing
+import cv2
 
 # First we will need to do a lot of preprocessing an image that may pass through (see preprocessing.py)
+
+preprocessing = Preprocessing()
 
 class Receipt():
 
@@ -32,7 +35,7 @@ class Receipt():
         text = pytesseract.image_to_string(img)
         return text
 
-    def get_store(text, store_list_personal = ["Target", "CVS", "Trader Joe's"], store_list_general = file_to_list("brands.txt")):
+    def get_store(text, store_list_personal = ["Target", "CVS", "Trader Joe's"], store_list_general = preprocessing.file_to_list("brands.txt")):
         """
         We have two sets of stores. One set is extremely general that contains thousands of stores.
         The other set is personalized to each user of the platform. It is a small set of stores that user has shopped at
@@ -72,8 +75,9 @@ class Receipt():
         items = {}
         for line in text:
             amount = re.search(r"\d+\.\d{2}$", string=line)
-            if amount:
-                items["".join(filter(str.isalpha, line.rsplit(" ", 1)[0]))] = amount.group()
+            item = "".join(filter(str.isalpha, line.rsplit(" ", 1)[0]))
+            if amount and len(item) != 0:
+                items[item] = amount.group()
         return items
 
     def get_total(text):
@@ -91,7 +95,7 @@ class Receipt():
                 totals["Total"] = amount.group()
         return totals
     
-    def get_item_categories(items, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"]):
+    def get_item_categories(items, categories = ["Health", "Food", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"]):
         """
         Function to categorize items on a receipt.
 
@@ -109,7 +113,7 @@ class Receipt():
 
         return categorized_items_dict
     
-    def get_item_category(item, categories = ["Health", "Foods", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
+    def get_item_category(item, categories = ["Health", "Food", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
         category = classifier(item, candidate_labels = categories)
         return category["labels"][0]
 
@@ -122,7 +126,18 @@ class Receipt():
 # print(Receipt.get_item_categories(items=items))
 
 if __name__ == "__main__":
+    img = cv2.imread("/Users/kevindougherty/Documents/GitHub/expense_tracking/IMG_6008.jpeg")
+    img = preprocessing.grayscale(img)
+    img = preprocessing.noise_removal(img)
+    img = preprocessing.thick_font(img)
+    img = preprocessing.remove_borders(img)
+    cv2.imwrite('img.jpg', img)
     R = Receipt
-    text = R.get_receipt_text("/Users/kevindougherty/Documents/GitHub/expense_tracking/64253187_429175fba8_b.jpg")
+    text = R.get_receipt_text("img.jpg")
     print(text)
     print(R.get_store(text))
+    items_dict = Receipt.get_items(text)
+    print(items_dict)
+    for item in items_dict:
+        category = Receipt.get_item_category(item)
+        print(category)

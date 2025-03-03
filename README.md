@@ -24,3 +24,4 @@ Sources:
 - Pytesseract to read receipt and parse information: https://pypi.org/project/pytesseract/
 - Forms in Flask: https://www.digitalocean.com/community/tutorials/how-to-use-web-forms-in-a-flask-application
 - Registering users in Flask: https://www.youtube.com/watch?app=desktop&v=71EU8gnZqZQ
+- Preprocessing images in Python: https://www.youtube.com/watch?v=ADV-AjAXHdc
