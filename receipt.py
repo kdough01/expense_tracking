@@ -12,16 +12,12 @@ Price: the price of the item on the receipt
 Quantity: if there are duplicates of the item on the receipt we will just increment this value
 """
 
-from PIL import Image#, ImageFilter, ImageEnhance
+from PIL import Image
 import pytesseract
-# import numpy as np
-# import cv2
 from transformers import pipeline
 import re
 from preprocessing import Preprocessing
 import cv2
-
-# First we will need to do a lot of preprocessing an image that may pass through (see preprocessing.py)
 
 preprocessing = Preprocessing()
 
@@ -119,11 +115,6 @@ class Receipt():
 
     def __repr__(self):
         return '<Receipt %r>' % self.id
-    
-# text = Receipt.get_receipt_text("/Users/kevindougherty/Documents/GitHub/expense_tracking/test.png")
-# items = Receipt.get_items(text)
-# print(items.keys())
-# print(Receipt.get_item_categories(items=items))
 
 if __name__ == "__main__":
     img = cv2.imread("/Users/kevindougherty/Documents/GitHub/expense_tracking/IMG_6008.jpeg")

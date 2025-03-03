@@ -7,16 +7,8 @@ For best results, you can use an online receipt and screenshot it to upload.
 This module will just be to transform the image to make it more readable. Parsing the receipt for text will be in the receipt.py file
 """
 
-from PIL import Image, ImageFilter, ImageEnhance
-import pytesseract
 import numpy as np
 import cv2
-
-# print(pytesseract.image_to_string(Image.open('test.png')))
-
-# https://pyimagesearch.com/2021/11/22/improving-ocr-results-with-basic-image-processing/
-
-# https://pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
 
 class Preprocessing():
     def file_to_list(self, filename):
@@ -59,13 +51,3 @@ class Preprocessing():
         x, y, w, h = cv2.boundingRect(cnt)
         crop = image[y:y+h, x:x+w]
         return crop
-    
-    
-# cv2.COLOR_BGR2GRAY
-# P = Preprocessing()
-# img = cv2.imread("/Users/kevindougherty/Documents/GitHub/expense_tracking/IMG_6008.jpeg")
-# img = P.grayscale(img)
-# img = P.noise_removal(img)
-# img = P.thick_font(img)
-# img = P.remove_borders(img)
-# cv2.imwrite('img.jpg', img)
