@@ -1,3 +1,10 @@
+"""
+A few tests to ensure the receipt is being parsed correctly.
+These were comprehensize enough to be a proof of concept when beginning.
+"""
+
+__author__ = "Kevin Dougherty"
+
 from receipt import Receipt
 
 # Run `python -m pytest`

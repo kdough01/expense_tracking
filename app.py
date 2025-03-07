@@ -1,3 +1,9 @@
+"""
+Main app file.
+"""
+
+__author__ = "Kevin Dougherty"
+
 from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user
@@ -12,6 +18,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
 from preprocessing import Preprocessing
+from db_calculations import index_calculations, items_calculations
 import cv2
 
 app = Flask(__name__)
@@ -23,15 +30,8 @@ app.config["SECRET_KEY"] = "secret_key"
 
 # TODO: Create a monthly spending chart that displays how much a person has spent that month
 # TODO: Add a check where if the stores name is in a receipt explicitly we use that as the stores name.
-# TODO: I need a way to manually add a receipt in case someone doesn't have a picture of their receipt
-# TODO: Make sure the chart labels/axes' labels are all correct
 
 db = SQLAlchemy(app)
-"""
-When we load the site it should take us to the login page automatically. There should be a button "Don't have a site, sign up!" This would take us to the sign up page.
-The old root path should now be the root path to the user id whose session it is. When a user clicks "Expense Tracker Home" it should take them to the home page of their Expense
-Tracker.
-"""
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -136,11 +136,13 @@ def index(user_id):
         except:
             store = "Could not determine"
             amount = "0"
+
         finally:
             new_receipt = ReceiptTable(content = store, total = amount, user_id = user_id)
             db.session.add(new_receipt)
             db.session.commit()
             items_dict = Receipt.get_items(text)
+
             for item in items_dict:
                 category = Receipt.get_item_category(item)
                 new_item = ItemTable(item = item, total = items_dict[item], category = category, receipt_id = new_receipt.id)
@@ -154,35 +156,18 @@ def index(user_id):
             return "There was an issue adding your receipt."
     else:
         receipts = ReceiptTable.query.filter_by(user_id=user_id).order_by(ReceiptTable.date_created).all()
-        receipt_totals = []
-        unique_stores = {}
-        unique_categories = {}
-        for receipt in receipts:
-            if receipt.content in unique_stores:
-                unique_stores[receipt.content] += float(receipt.total)
-            else:
-                unique_stores[receipt.content] = float(receipt.total)
-
-            item_sum = 0
-            for item in receipt.receipt_items:
-                if item.category != "Total":
-                    item_sum += float(item.total)
-                    if item.category in unique_categories:
-                        unique_categories[item.category] += float(item.total)
-                    else:
-                        unique_categories[item.category] = float(item.total)
-            receipt_totals.append(item_sum)
-
+        receipt_totals, unique_stores, unique_categories = index_calculations(db=receipts)
         receipt_total = sum(receipt_totals)
 
         unique_stores = pd.DataFrame.from_dict(unique_stores, orient='index', columns=["Total"])
         unique_categories = pd.DataFrame.from_dict(unique_categories, orient='index', columns=["Total"])
 
-        fig = px.bar(unique_stores, x=unique_stores.index, y="Total")
+        fig = px.bar(unique_stores, x=unique_stores.index, y="Total", labels={"Total": "Total Spent at Store"})
         fig.update_layout(title_text=None)
+        fig.update_xaxes(title_text="Stores")
         expenses_by_store = pio.to_html(fig, full_html=False)
 
-        fig = px.bar(unique_categories, x=unique_categories.index, y="Total")
+        fig = px.bar(unique_categories, x=unique_categories.index, y="Total", labels={"Total": "Total Spent in Category"})
         fig.update_layout(title_text=None)
         expenses_by_category = pio.to_html(fig, full_html=False)
 
@@ -220,17 +205,7 @@ def update(user_id, receipt_id):
 @app.route('/items/<int:user_id>/<int:receipt_id>')
 def items(user_id, receipt_id):
     receipt = ReceiptTable.query.filter_by(id=receipt_id, user_id=user_id).first_or_404()
-        
-    categories = {}
-    receipt_total = 0
-    for item in receipt.receipt_items:
-        if item.category != "Total":
-            receipt_total += float(item.total)
-            if item.category in categories:
-                categories[item.category] += float(item.total)
-            else:
-                categories[item.category] = float(item.total)
-
+    categories, receipt_total = items_calculations(db = receipt)
     categories = pd.DataFrame.from_dict(categories, orient='index', columns=["Total"])
 
     fig = px.pie(categories, names=categories.index, values="Total")

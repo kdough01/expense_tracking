@@ -1,23 +1,14 @@
 """
-For now, we are going to assume the receipt is able to be easily read and we don't have to do any preprocessing.
-
-The goal will be to get each receipt in the form of a dataframe with columns:
-["Receipt Number", "Store", "Category", "Item", "Price", "Quantity"]
-
-Receipt Number: unique ID representing that receipt, we could actually store the name of the store in this as the first four digits (ex: Target may be 0000, Whole Foods might be 0001)
-Store: name of store
-Category: this will be initialized to None here, and we will pass our df into the categories module to identify the category for each item
-Item: whatever the name of the item is on the receipt
-Price: the price of the item on the receipt
-Quantity: if there are duplicates of the item on the receipt we will just increment this value
+Parsing the receipt for text, store, items, item categories, and totals.
 """
+
+__author__ = "Kevin Dougherty"
 
 from PIL import Image
 import pytesseract
 from transformers import pipeline
 import re
 from preprocessing import Preprocessing
-import cv2
 
 preprocessing = Preprocessing()
 
@@ -25,49 +16,51 @@ class Receipt():
 
     def get_receipt_text(receipt_img):
         """
-        Extract text from receipt
+        Extract text from receipt using OCR
+
+        Inputs:
+        receipt_img: str - path to the receipt (lies in the static/image_uploads folder)
+
+        Outputs:
+        text: str - the text from the receipt as outputted by pytesseract, used after functions in preprocessing class
         """
         img = Image.open(receipt_img)
         text = pytesseract.image_to_string(img)
         return text
 
-    def get_store(text, store_list_personal = ["Target", "CVS", "Trader Joe's"], store_list_general = preprocessing.file_to_list("brands.txt")):
+    def get_store(text, store_list_personal = ["Target", "CVS", "Trader Joe's", "Chipotle"], store_list_general = preprocessing.file_to_list("brands.txt")):
         """
         We have two sets of stores. One set is extremely general that contains thousands of stores.
         The other set is personalized to each user of the platform. It is a small set of stores that user has shopped at
-        recently/frequently. We will search through the personalized store list first, then the general one. If no store is found
-        we will ask the user to input the name of the store and add it to their personalized set of stores.
+        recently/frequently. We will search through the personalized store list so the program runs faster. If I were to
+        make a modification it would be to allow users to add their own stores to the platform to be used here.
 
-        We're going to have a predefined set of stores here to look for and each time a new store
-        is added/identified, it will be added to the predefined set of stores to look through.
+        The general store list takes too long to parse and reduces the runtime of the app significantly.
 
         Parameters:
         text: str - string output we get from out get_receipt_text function
         store_list: list - list of stores that a person may shop at, stored in our stores.txt file
         """
-        # This currently ALWAYS returns a value from the personalized list
+
         classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
         text = text.split(" ")
-        """for item in text:
-            category = classifier(item, candidate_labels = store_list_personal)
-            if category:
-                return category["labels"][0]"""
             
         for item in text:
             category = classifier(item, candidate_labels = store_list_personal)
             if category:
                 return category["labels"][0]
 
-        # I think it would be ideal if a user could upload a list of places they frequently shop at and
-        # then we first look through this list before searching the larger stores list
-        # Did confirm this is SIGNIFICANTLY faster
-
     def get_items(text):
         """
-        Takes in text from the receipt and returns the items and prices as a dictionary
+        Determines the items on a receipt by matching a regex pattern
+
+        Inputs:
+        text: str - the text from the receipt
+         
+        Outputs:
+        items: dict - returns the items and prices as a dictionary
         """
         text = text.split("\n")
-        # print(text)
         items = {}
         for line in text:
             amount = re.search(r"\d+\.\d{2}$", string=line)
@@ -78,7 +71,13 @@ class Receipt():
 
     def get_total(text):
         """
-        Takes in the text from the receipt and returns the total and subtotal as a dictionary
+        Retrieves the total on the receipt.
+
+        Inputs:
+        text: str - the text from the receipt
+         
+        Outputs:
+        totals: dict - returns a dictionary with the keys being Total and Subtotal and the values being the amounts for both
         """
         text = text.split("\n")
         totals = {}
@@ -110,25 +109,19 @@ class Receipt():
         return categorized_items_dict
     
     def get_item_category(item, categories = ["Health", "Food", "Clothes", "Miscellaneous", "Electronics", "Hygiene", "Tax", "Discount", "Total"], classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")):
+        """
+        Retrieves the category of a single item
+
+        Inputs:
+        item: str - an item from the receipt
+        categories: list - a predefined list of categories, future iterations of this project may allow users to input their own categories
+        classifier: pipeline - a transformers pipeline that connects to BART to identify what category a receipt item is most likely a part of
+        """
         category = classifier(item, candidate_labels = categories)
         return category["labels"][0]
 
     def __repr__(self):
+        """
+        Returns the receipt id as a string object.
+        """
         return '<Receipt %r>' % self.id
-
-if __name__ == "__main__":
-    img = cv2.imread("/Users/kevindougherty/Documents/GitHub/expense_tracking/IMG_6008.jpeg")
-    img = preprocessing.grayscale(img)
-    img = preprocessing.noise_removal(img)
-    img = preprocessing.thick_font(img)
-    img = preprocessing.remove_borders(img)
-    cv2.imwrite('img.jpg', img)
-    R = Receipt
-    text = R.get_receipt_text("img.jpg")
-    print(text)
-    print(R.get_store(text))
-    items_dict = Receipt.get_items(text)
-    print(items_dict)
-    for item in items_dict:
-        category = Receipt.get_item_category(item)
-        print(category)
